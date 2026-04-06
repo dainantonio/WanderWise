@@ -1,0 +1,5 @@
+{
+  "name": "WanderWise AI Travel Assistant",
+  "description": "Your personalized AI travel companion that provides real-time, location-aware recommendations based on your preferences and current context.",
+  "requestFramePermissions": ["geolocation"]
+}

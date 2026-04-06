@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "user_preferences": {
+      "title": "User Preferences",
+      "description": "Stores user travel preferences and context.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "groupType": { "type": "string", "enum": ["solo", "couple", "family", "friends"], "description": "Type of travel group." },
+        "interests": { "type": "array", "items": { "type": "string" }, "description": "User interests (e.g., food, history, nature)." },
+        "budget": { "type": "string", "enum": ["budget", "mid-range", "luxury"], "description": "Travel budget level." },
+        "indoorOutdoor": { "type": "string", "enum": ["indoor", "outdoor", "both"], "description": "Preference for indoor or outdoor activities." },
+        "learnedPreferences": { "type": "string", "description": "AI-generated summary of user preferences based on feedback." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp." }
+      },
+      "required": ["uid", "updatedAt"]
+    },
+    "recommendations": {
+      "title": "Recommendations",
+      "description": "Stores past recommendations provided to the user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "content": { "type": "string", "description": "The recommendation text/markdown." },
+        "feedback": { "type": "string", "enum": ["like", "dislike", "none"], "description": "User feedback on this recommendation." },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["uid", "content", "createdAt"]
+    },
+    "itinerary": {
+      "title": "Itinerary",
+      "description": "Stores a multi-day travel itinerary built by the user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "title": { "type": "string", "description": "Title of the itinerary." },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dayNumber": { "type": "integer" },
+              "stops": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "placeId": { "type": "string" },
+                    "title": { "type": "string" },
+                    "notes": { "type": "string" },
+                    "location": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": { "type": "number" },
+                        "longitude": { "type": "number" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "title", "days", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/preferences/current": {
+      "schema": "user_preferences",
+      "description": "The current preferences for a specific user."
+    },
+    "/users/{userId}/recommendations/{recommendationId}": {
+      "schema": "recommendations",
+      "description": "Historical recommendations for a specific user."
+    },
+    "/users/{userId}/itineraries/{itineraryId}": {
+      "schema": "itinerary",
+      "description": "User-created travel itineraries."
+    }
+  }
+}

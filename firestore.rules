@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}/preferences
+    // Document ID: current
+    // Fields:
+    //   - uid: string (required) - The user's unique ID.
+    //   - groupType: string (optional) - solo, couple, family, friends
+    //   - interests: list (optional) - array of strings
+    //   - budget: string (optional) - budget, mid-range, luxury
+    //   - indoorOutdoor: string (optional) - indoor, outdoor, both
+    //   - updatedAt: timestamp (required) - Last update timestamp.
+    //
+    // Collection: /users/{userId}/recommendations
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required) - The user's unique ID.
+    //   - content: string (required) - The recommendation text/markdown.
+    //   - location: map (optional) - {latitude: number, longitude: number}
+    //   - createdAt: timestamp (required) - Creation timestamp.
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUserPreference(data) {
+      return data.keys().hasAll(['uid', 'updatedAt']) &&
+             data.uid == request.auth.uid &&
+             data.updatedAt is timestamp &&
+             (data.get('interests', []) is list) &&
+             (data.get('budget', 'mid-range') is string) &&
+             (data.get('groupType', 'solo') is string);
+    }
+
+    function isValidRecommendation(data) {
+      return data.keys().hasAll(['uid', 'content', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.content is string &&
+             data.content.size() < 100000 &&
+             data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      match /preferences/{prefId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidUserPreference(request.resource.data);
+      }
+
+      match /recommendations/{recId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidRecommendation(request.resource.data);
+        allow update: if isOwner(userId) && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback']) &&
+                      request.resource.data.feedback in ['like', 'dislike', 'none'];
+      }
+
+      match /itineraries/{itineraryId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && 
+                              request.resource.data.uid == request.auth.uid &&
+                              request.resource.data.title is string &&
+                              request.resource.data.days is list;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
